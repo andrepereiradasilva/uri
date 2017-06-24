@@ -46,6 +46,15 @@ class UriHelperTest extends TestCase
 		$actual = UriHelper::parse_url($url);
 		$this->assertEquals($expected, $actual, 'Line: ' . __LINE__ . ' Results should be equal');
 
+		// Test path for UTF-8 characters with non utf-8 LCTYPE
+		$url = 'http://mydomain.com/mytestpath/中文/纹身馆简介你好/媒体报道';
+		$expected['path'] = '/mytestpath/中文/纹身馆简介你好/媒体报道';
+		$previousLcType = setlocale(LC_CTYPE, '0');
+		setlocale(LC_CTYPE, 'en_GB');
+		$actual = UriHelper::parse_url($url);
+		setlocale(LC_CTYPE, $previousLcType);
+		$this->assertEquals($expected, $actual, 'Line: ' . __LINE__ . ' Results should be equal');
+
 		// Test special characters in URL
 		$url = 'http://mydomain.com/!*\'();:@&=+$,/?%#[]" \\';
 		$expected = parse_url($url);
