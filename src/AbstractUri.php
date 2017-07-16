@@ -387,8 +387,8 @@ abstract class AbstractUri implements UriInterface
 	{
 		$path = preg_replace('#/+#', '/', $path);
 
-		// No dots in path no need to clean further, most used scenario.
-		if (strpos($path, './') === false)
+		// If no dots in path no need to clean further, most used scenario.
+		if (strpos($path, './') === false && substr($path, -1) !== '.')
 		{
 			return $path;
 		}
