@@ -385,30 +385,43 @@ abstract class AbstractUri implements UriInterface
 	 */
 	protected function cleanPath($path)
 	{
-		$path = explode('/', preg_replace('#(/+)#', '/', $path));
+		$path = preg_replace('#[/+]#', '/', $path);
 
-		for ($i = 0, $n = count($path); $i < $n; $i++)
+		// No dots in path no need to clean further, most used scenario.
+		if (strpos($path, '.') === false)
 		{
-			if ($path[$i] == '.' || $path[$i] == '..')
-			{
-				if (($path[$i] == '.') || ($path[$i] == '..' && $i == 1 && $path[0] == ''))
-				{
-					unset($path[$i]);
-					$path = array_values($path);
-					$i--;
-					$n--;
-				}
-				elseif ($path[$i] == '..' && ($i > 1 || ($i == 1 && $path[0] != '')))
-				{
-					unset($path[$i]);
-					unset($path[$i - 1]);
-					$path = array_values($path);
-					$i -= 2;
-					$n -= 2;
-				}
-			}
+			return $path;
 		}
 
-		return implode('/', $path);
+		// Remove relative paths.
+		$pathParts = explode('/', $path);
+
+		// Check if url starts with slash.
+		$startsWithSlash = isset($pathParts[0]) === true && $pathParts[0] === '';
+
+		if ($startsWithSlash === true)
+		{
+			unset($pathParts[0]);
+		}
+
+		$previousKey = null;
+
+		foreach ($pathParts as $key => &$pathPart)
+		{
+			if ($pathPart === '.' || $pathPart === '..')
+			{
+				if ($pathPart === '..' && $previousKey !== null)
+				{
+					unset($pathParts[$previousKey]);
+				}
+
+				unset($pathPart);
+				continue;
+			}
+
+			$previousKey = $key;
+		}
+
+		return ($startsWithSlash === true ? '/' : '') . implode('/', $pathParts);
 	}
 }
