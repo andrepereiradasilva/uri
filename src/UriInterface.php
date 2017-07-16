@@ -140,6 +140,16 @@ interface UriInterface
 	 * @return  boolean  True if using SSL via HTTPS.
 	 *
 	 * @since   1.0
+	 * @deprecated   3.0  Use isSecure instead.
 	 */
 	public function isSsl();
+
+	/**
+	 * Checks whether the current URI is using secure scheme (e.g. https).
+	 *
+	 * @return  boolean  True if using secure scheme (e.g. https).
+	 *
+	 * @since   2.0
+	 */
+	public function isSecure();
 }

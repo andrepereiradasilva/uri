@@ -106,7 +106,7 @@ abstract class AbstractUri implements UriInterface
 	 */
 	public function __construct($uri = null)
 	{
-		if (!is_null($uri))
+		if ($uri !== null)
 		{
 			$this->parse($uri);
 		}
@@ -138,17 +138,14 @@ abstract class AbstractUri implements UriInterface
 		// Make sure the query is created
 		$query = $this->getQuery();
 
-		$uri = '';
-		$uri .= in_array('scheme', $parts) ? (!empty($this->scheme) ? $this->scheme . '://' : '') : '';
-		$uri .= in_array('user', $parts) ? $this->user : '';
-		$uri .= in_array('pass', $parts) ? (!empty($this->pass) ? ':' : '') . $this->pass . (!empty($this->user) ? '@' : '') : '';
-		$uri .= in_array('host', $parts) ? $this->host : '';
-		$uri .= in_array('port', $parts) ? (!empty($this->port) ? ':' : '') . $this->port : '';
-		$uri .= in_array('path', $parts) ? $this->path : '';
-		$uri .= in_array('query', $parts) ? (!empty($query) ? '?' . $query : '') : '';
-		$uri .= in_array('fragment', $parts) ? (!empty($this->fragment) ? '#' . $this->fragment : '') : '';
-
-		return $uri;
+		return (in_array('scheme', $parts) ? (!empty($this->scheme) ? $this->scheme . '://' : '') : '')
+			. (in_array('user', $parts) ? $this->user : '')
+			. (in_array('pass', $parts) ? (!empty($this->pass) ? ':' : '') . $this->pass . (!empty($this->user) ? '@' : '') : '')
+			. (in_array('host', $parts) ? $this->host : '')
+			. (in_array('port', $parts) ? (!empty($this->port) ? ':' : '') . $this->port : '')
+			. (in_array('path', $parts) ? $this->path : '')
+			. (in_array('query', $parts) ? (!empty($query) ? '?' . $query : '') : '')
+			. (in_array('fragment', $parts) ? (!empty($this->fragment) ? '#' . $this->fragment : '') : '');
 	}
 
 	/**
@@ -177,12 +174,7 @@ abstract class AbstractUri implements UriInterface
 	 */
 	public function getVar($name, $default = null)
 	{
-		if (array_key_exists($name, $this->vars))
-		{
-			return $this->vars[$name];
-		}
-
-		return $default;
+		return array_key_exists($name, $this->vars) ? $this->vars[$name] : $default;
 	}
 
 	/**
@@ -196,13 +188,13 @@ abstract class AbstractUri implements UriInterface
 	 */
 	public function getQuery($toArray = false)
 	{
-		if ($toArray)
+		if ($toArray === true)
 		{
 			return $this->vars;
 		}
 
 		// If the query is empty build it first
-		if (is_null($this->query))
+		if ($this->query === null)
 		{
 			$this->query = static::buildQuery($this->vars);
 		}
@@ -267,7 +259,7 @@ abstract class AbstractUri implements UriInterface
 	 */
 	public function getPort()
 	{
-		return (isset($this->port)) ? $this->port : null;
+		return isset($this->port) ? $this->port : null;
 	}
 
 	/**
@@ -300,10 +292,26 @@ abstract class AbstractUri implements UriInterface
 	 * @return  boolean  True if using SSL via HTTPS.
 	 *
 	 * @since   1.0
+	 * @deprecated   3.0  Use isSecure instead.
 	 */
 	public function isSsl()
 	{
-		return $this->getScheme() == 'https';
+		return $this->isSecure();
+	}
+
+	/**
+	 * Checks whether the current URI is using secure scheme (e.g. https).
+	 *
+	 * @return  boolean  True if using secure scheme (e.g. https).
+	 *
+	 * @since   2.0
+	 * @link    https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml
+	 */
+	public function isSecure()
+	{
+		$scheme = $this->getScheme();
+
+		return in_array($scheme, ['https', 'ftps', 'sftp', 'rtsps']) === true;
 	}
 
 	/**
@@ -347,10 +355,16 @@ abstract class AbstractUri implements UriInterface
 			throw new \RuntimeException(sprintf('Could not parse the requested URI %s', $uri));
 		}
 
-		$retval = ($parts) ? true : false;
+		// No parts in the url.
+		if ($parts === [])
+		{
+			return false;
+		}
+
+		$queryExists = isset($parts['query']) === true;
 
 		// We need to replace &amp; with & for parse_str to work right...
-		if (isset($parts['query']) && strpos($parts['query'], '&amp;'))
+		if ($queryExists === true && strpos($parts['query'], '&amp;') !== false)
 		{
 			$parts['query'] = str_replace('&amp;', '&', $parts['query']);
 		}
@@ -361,12 +375,12 @@ abstract class AbstractUri implements UriInterface
 		}
 
 		// Parse the query
-		if (isset($parts['query']))
+		if ($queryExists === true)
 		{
 			parse_str($parts['query'], $this->vars);
 		}
 
-		return $retval;
+		return true;
 	}
 
 	/**
@@ -385,20 +399,20 @@ abstract class AbstractUri implements UriInterface
 	 */
 	protected function cleanPath($path)
 	{
-		$path = explode('/', preg_replace('#(/+)#', '/', $path));
+		$path = explode('/', preg_replace('#[/+]#', '/', $path));
 
 		for ($i = 0, $n = count($path); $i < $n; $i++)
 		{
-			if ($path[$i] == '.' || $path[$i] == '..')
+			if ($path[$i] === '.' || $path[$i] === '..')
 			{
-				if (($path[$i] == '.') || ($path[$i] == '..' && $i == 1 && $path[0] == ''))
+				if ($path[$i] === '.' || ($path[$i] === '..' && $i === 1 && $path[0] === ''))
 				{
 					unset($path[$i]);
 					$path = array_values($path);
 					$i--;
 					$n--;
 				}
-				elseif ($path[$i] == '..' && ($i > 1 || ($i == 1 && $path[0] != '')))
+				elseif ($path[$i] === '..' && ($i > 1 || ($i === 1 && $path[0] !== '')))
 				{
 					unset($path[$i]);
 					unset($path[$i - 1]);
