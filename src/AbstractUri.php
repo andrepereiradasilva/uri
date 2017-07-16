@@ -385,30 +385,65 @@ abstract class AbstractUri implements UriInterface
 	 */
 	protected function cleanPath($path)
 	{
-		$path = explode('/', preg_replace('#(/+)#', '/', $path));
-
-		for ($i = 0, $n = count($path); $i < $n; $i++)
+		// Remove double or more slashes.
+		if (strpos($path, '//') !== false)
 		{
-			if ($path[$i] == '.' || $path[$i] == '..')
-			{
-				if (($path[$i] == '.') || ($path[$i] == '..' && $i == 1 && $path[0] == ''))
-				{
-					unset($path[$i]);
-					$path = array_values($path);
-					$i--;
-					$n--;
-				}
-				elseif ($path[$i] == '..' && ($i > 1 || ($i == 1 && $path[0] != '')))
-				{
-					unset($path[$i]);
-					unset($path[$i - 1]);
-					$path = array_values($path);
-					$i -= 2;
-					$n -= 2;
-				}
-			}
+			$path = preg_replace('#/+#', '/', $path);
 		}
 
-		return implode('/', $path);
+		// No dots in path, no need to clean further.
+		if (strpos($path, '.') === false)
+		{
+			return $path;
+		}
+
+		// Remove relative current path references with slashes (ex: './', '/./', '/bar/./').
+		if (strpos($path, './') !== false)
+		{
+			$path = preg_replace('#(?<!\.)\./#', '', $path);
+		}
+
+		// Remove relative current path references without slashes (ex: '.', '/.', '/bar/.').
+		if (substr($path, -1) === '.' && substr($path, -2) !== '..')
+		{
+			$path = rtrim($path, '.');
+		}
+
+		// If no relative parent paths in path, no need to clean further.
+		if (strpos($path, '..') === false)
+		{
+			return $path;
+		}
+
+		// Check if url starts with slash.
+		$startsWithSlash = isset($path[0]) === true && $path[0] === '/';
+
+		// Replace parent relative paths.
+		$pathParts = explode('/', $path);
+
+		if ($startsWithSlash === true)
+		{
+			unset($pathParts[0]);
+		}
+
+		$validKeys = [];
+
+		foreach ($pathParts as $key => $pathPart)
+		{
+			if ($pathPart === '..')
+			{
+				if (($prevKey = array_pop($validKeys)) !== null)
+				{
+					unset($pathParts[$prevKey]);
+				}
+
+				unset($pathParts[$key]);
+				continue;
+			}
+
+			$validKeys[] = $key;
+		}
+
+		return ($startsWithSlash === true ? '/' : '') . implode('/', $pathParts);
 	}
 }
