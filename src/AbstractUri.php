@@ -138,14 +138,14 @@ abstract class AbstractUri implements UriInterface
 		// Make sure the query is created
 		$query = $this->getQuery();
 
-		return (in_array('scheme', $parts) ? (!empty($this->scheme) ? $this->scheme . '://' : '') : '')
-			. (in_array('user', $parts) ? $this->user : '')
-			. (in_array('pass', $parts) ? (!empty($this->pass) ? ':' : '') . $this->pass . (!empty($this->user) ? '@' : '') : '')
-			. (in_array('host', $parts) ? $this->host : '')
-			. (in_array('port', $parts) ? (!empty($this->port) ? ':' : '') . $this->port : '')
-			. (in_array('path', $parts) ? $this->path : '')
-			. (in_array('query', $parts) ? (!empty($query) ? '?' . $query : '') : '')
-			. (in_array('fragment', $parts) ? (!empty($this->fragment) ? '#' . $this->fragment : '') : '');
+		return (in_array('scheme', $parts) && !empty($this->scheme) ? $this->scheme . '://' : '')
+			. (in_array('user', $parts) && !empty($this->user) ? $this->user : '')
+			. (in_array('pass', $parts) && !empty($this->pass) ? ':' . $this->pass : '')
+			. (in_array('host', $parts) && !empty( $this->host) ? ($this->user ? '@' : '') . $this->host : '')
+			. (in_array('port', $parts) && !empty($this->port) ? ':' . $this->port : '')
+			. (in_array('path', $parts) && !empty($this->path) ? $this->path : '')
+			. (in_array('query', $parts) && !empty($query) ? '?' . $query : '')
+			. (in_array('fragment', $parts) && !empty($this->fragment) ? '#' . $this->fragment : '');
 	}
 
 	/**
@@ -259,7 +259,7 @@ abstract class AbstractUri implements UriInterface
 	 */
 	public function getPort()
 	{
-		return isset($this->port) ? $this->port : null;
+		return $this->port;
 	}
 
 	/**
@@ -337,17 +337,14 @@ abstract class AbstractUri implements UriInterface
 	 * @return  boolean  True on success.
 	 *
 	 * @since   1.0
+	 * @throws  RuntimeException
 	 */
 	protected function parse($uri)
 	{
 		// Set the original URI to fall back on
 		$this->uri = $uri;
 
-		/*
-		 * Parse the URI and populate the object fields. If URI is parsed properly,
-		 * set method return value to true.
-		 */
-
+		// Parse the URI and populate the object fields.
 		$parts = UriHelper::parse_url($uri);
 
 		if ($parts === false)
@@ -355,29 +352,21 @@ abstract class AbstractUri implements UriInterface
 			throw new \RuntimeException(sprintf('Could not parse the requested URI %s', $uri));
 		}
 
-		// No parts in the url.
-		if ($parts === [])
-		{
-			return false;
-		}
-
-		$queryExists = isset($parts['query']) === true;
-
-		// We need to replace &amp; with & for parse_str to work right...
-		if ($queryExists === true && strpos($parts['query'], '&amp;') !== false)
-		{
-			$parts['query'] = str_replace('&amp;', '&', $parts['query']);
-		}
-
 		foreach ($parts as $key => $value)
 		{
-			$this->$key = $value;
-		}
+			if ($key === 'query')
+			{
+				// We need to replace &amp; with & for parse_str to work right...
+				if (strpos($value, '&amp;') !== false)
+				{
+					$value = str_replace('&amp;', '&', $value);
+				}
 
-		// Parse the query
-		if ($queryExists === true)
-		{
-			parse_str($parts['query'], $this->vars);
+				// Parse the query.
+				parse_str($value, $this->vars);
+			}
+
+			$this->$key = $value;
 		}
 
 		return true;
