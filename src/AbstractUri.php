@@ -399,20 +399,20 @@ abstract class AbstractUri implements UriInterface
 	 */
 	protected function cleanPath($path)
 	{
-		$path = explode('/', preg_replace('#[/+]#', '/', $path));
+		$path = explode('/', preg_replace('#(/+)#', '/', $path));
 
 		for ($i = 0, $n = count($path); $i < $n; $i++)
 		{
-			if ($path[$i] === '.' || $path[$i] === '..')
+			if ($path[$i] == '.' || $path[$i] == '..')
 			{
-				if ($path[$i] === '.' || ($path[$i] === '..' && $i === 1 && $path[0] === ''))
+				if (($path[$i] == '.') || ($path[$i] == '..' && $i == 1 && $path[0] == ''))
 				{
 					unset($path[$i]);
 					$path = array_values($path);
 					$i--;
 					$n--;
 				}
-				elseif ($path[$i] === '..' && ($i > 1 || ($i === 1 && $path[0] !== '')))
+				elseif ($path[$i] == '..' && ($i > 1 || ($i == 1 && $path[0] != '')))
 				{
 					unset($path[$i]);
 					unset($path[$i - 1]);
