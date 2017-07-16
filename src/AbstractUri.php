@@ -385,10 +385,32 @@ abstract class AbstractUri implements UriInterface
 	 */
 	protected function cleanPath($path)
 	{
-		$path = preg_replace('#/+#', '/', $path);
+		// Remove double or more slashes.
+		if (strpos($path, '//') !== false)
+		{
+			$path = preg_replace('#/+#', '/', $path);
+		}
 
-		// If no dots in path no need to clean further, most used scenario.
-		if (strpos($path, './') === false && substr($path, -1) !== '.')
+		// No dots in path, no need to clean further.
+		if (strpos($path, '.') === false)
+		{
+			return $path;
+		}
+
+		// Remove relative current path references with slashes (ex: './', '/./', '/bar/./').
+		if (strpos($path, './') !== false)
+		{
+			$path = preg_replace('#(?<!\.)\./#', '', $path);
+		}
+
+		// Remove relative current path references without slashes (ex: '.', '/.', '/bar/.').
+		if (substr($path, -1) === '.' && substr($path, -2) !== '..')
+		{
+			$path = rtrim($path, '.');
+		}
+
+		// If no relative parent paths in path, no need to clean further.
+		if (strpos($path, '..') === false)
 		{
 			return $path;
 		}
@@ -396,7 +418,7 @@ abstract class AbstractUri implements UriInterface
 		// Check if url starts with slash.
 		$startsWithSlash = isset($path[0]) === true && $path[0] === '/';
 
-		// Remove relative paths.
+		// Replace parent relative paths.
 		$pathParts = explode('/', $path);
 
 		if ($startsWithSlash === true)
@@ -408,12 +430,6 @@ abstract class AbstractUri implements UriInterface
 
 		foreach ($pathParts as $key => $pathPart)
 		{
-			if ($pathPart === '.')
-			{
-				unset($pathParts[$key]);
-				continue;
-			}
-
 			if ($pathPart === '..')
 			{
 				if (($prevKey = array_pop($validKeys)) !== null)
