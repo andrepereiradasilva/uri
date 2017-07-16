@@ -385,41 +385,47 @@ abstract class AbstractUri implements UriInterface
 	 */
 	protected function cleanPath($path)
 	{
-		$path = preg_replace('#[/+]#', '/', $path);
+		$path = preg_replace('#/+#', '/', $path);
 
 		// No dots in path no need to clean further, most used scenario.
-		if (strpos($path, '.') === false)
+		if (strpos($path, './') === false)
 		{
 			return $path;
 		}
 
+		// Check if url starts with slash.
+		$startsWithSlash = isset($path[0]) === true && $path[0] === '/';
+
 		// Remove relative paths.
 		$pathParts = explode('/', $path);
-
-		// Check if url starts with slash.
-		$startsWithSlash = isset($pathParts[0]) === true && $pathParts[0] === '';
 
 		if ($startsWithSlash === true)
 		{
 			unset($pathParts[0]);
 		}
 
-		$previousKey = null;
+		$validKeys = [];
 
-		foreach ($pathParts as $key => &$pathPart)
+		foreach ($pathParts as $key => $pathPart)
 		{
-			if ($pathPart === '.' || $pathPart === '..')
+			if ($pathPart === '.')
 			{
-				if ($pathPart === '..' && $previousKey !== null)
-				{
-					unset($pathParts[$previousKey]);
-				}
-
-				unset($pathPart);
+				unset($pathParts[$key]);
 				continue;
 			}
 
-			$previousKey = $key;
+			if ($pathPart === '..')
+			{
+				if (($prevKey = array_pop($validKeys)) !== null)
+				{
+					unset($pathParts[$prevKey]);
+				}
+
+				unset($pathParts[$key]);
+				continue;
+			}
+
+			$validKeys[] = $key;
 		}
 
 		return ($startsWithSlash === true ? '/' : '') . implode('/', $pathParts);
