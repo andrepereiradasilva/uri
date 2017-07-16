@@ -44,7 +44,7 @@ class Uri extends AbstractUri
 	 *
 	 * @param   string  $name  Name of variable to remove.
 	 *
-	 * @return  void
+	 * @return  Uri  This method supports chaining.
 	 *
 	 * @since   1.0
 	 */
@@ -57,6 +57,8 @@ class Uri extends AbstractUri
 			// Empty the query
 			$this->query = null;
 		}
+
+		return $this;
 	}
 
 	/**
@@ -64,7 +66,7 @@ class Uri extends AbstractUri
 	 *
 	 * @param   array|string  $query  The query string or array.
 	 *
-	 * @return  void
+	 * @return  Uri  This method supports chaining.
 	 *
 	 * @since   1.0
 	 */
@@ -86,6 +88,8 @@ class Uri extends AbstractUri
 
 		// Empty the query
 		$this->query = null;
+
+		return $this;
 	}
 
 	/**
