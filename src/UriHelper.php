@@ -20,20 +20,21 @@ class UriHelper
 	/**
 	 * Does a UTF-8 safe version of PHP parse_url function
 	 *
-	 * @param   string   $url        URL to parse
-	 * @param   integer  $component  Retrieve just a specific URL component
+	 * @param   string  $url  URL to parse
 	 *
-	 * @return  mixed  Associative array or false if badly formed URL.
+	 * @return  mixed  Associative array with url parts or false if badly formed URL.
 	 *
-	 * @link    https://secure.php.net/manual/en/function.parse-url.php
+	 * @see     https://secure.php.net/manual/function.parse-url.php
 	 * @since   1.0
 	 */
-	public static function parse_url($url, $component = -1)
+	public static function parse_url(string $url, int $component = -1)
 	{
-		// If no UTF-8 chars in the url just parse it using php native parse_url which is faster.
-		if (utf8_decode($url) === $url)
+		$urlParts = parse_url($url, -1);
+
+		// If no UTF-8 chars in the url or system is using a utf-8 locale just parse it using php native parse_url which is faster.
+		if (utf8_decode($url) === $url || self::unparse_url($urlParts) === $url)
 		{
-			return parse_url($url, $component);
+			return $urlParts;
 		}
 
 		// URL with UTF-8 chars in the url.
@@ -64,5 +65,26 @@ class UriHelper
 
 		// With a well formed url decode the url (so UTF-8 chars are decoded).
 		return $parts ? array_map('urldecode', $parts) : $parts;
+	}
+
+	/**
+	 * Unparses a URL parsed by PHP parse_url function
+	 *
+	 * @param   array  The url parts.
+	 *
+	 * @return  string  $url  The URL unparsed
+	 *
+	 * @see     https://secure.php.net/manual/function.parse-url.php
+	 * @since   2.0
+	 */
+	public static function unparse_url(array $parsedUrl = []): string
+	{
+		return (isset($parsedUrl['scheme']) ? $parsedUrl['scheme'] . '://' : '')
+			. (isset($parsedUrl['user']) ? $parsedUrl['user'] . (isset($parsedUrl['pass']) ? ':' . $parsedUrl['pass'] : '') . '@'  : '')
+			. (isset($parsedUrl['host']) ? $parsedUrl['host'] : '')
+			. (isset($parsedUrl['port']) ? ':' . $parsedUrl['port'] : '')
+			. (isset($parsedUrl['path']) ? $parsedUrl['path'] : '')
+			. (isset($parsedUrl['query']) ? '?' . $parsedUrl['query'] : '')
+			. (isset($parsedUrl['fragment']) ? '#' . $parsedUrl['fragment'] : '');
 	}
 }
